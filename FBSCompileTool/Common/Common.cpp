@@ -86,3 +86,25 @@ double CStr2Double(const CString& str)
 
 	return num;
 }
+
+void StrSplit(CString str, const CString& delim, vector<CString>& vec)
+{
+	if (str.IsEmpty() || delim.IsEmpty())
+	{
+		return;
+	}
+	vec.clear();
+
+	CString	strNode = L"";
+	WCHAR* pTemp = NULL;
+	WCHAR* p = NULL;
+
+	pTemp = wcstok_s(str.GetBuffer(), delim, &p);
+	str.ReleaseBuffer();
+	while (pTemp != NULL)
+	{
+		strNode = pTemp;
+		vec.emplace_back(strNode);
+		pTemp = wcstok_s(NULL, delim, &p);
+	}
+}

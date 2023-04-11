@@ -2,7 +2,6 @@
 FlatBuffers界面编译辅助工具。
 # 概述
 本软件是flatc.exe的界面辅助工具。调用flatc.exe，将fbs文件编译为对应编程语言。
-由于仅支持生成C++代码。
 ![](https://raw.githubusercontent.com/tilongzs/FBSCompileTool/main/doc/screenshot.png)
 
 # 编译环境
@@ -14,6 +13,8 @@ FlatBuffers界面编译辅助工具。
 
 ###  FlatBuffers环境配置
 1. 输入protoc.exe的路径。
+2. 选择编程语言。
+3. 【可选】输入额外的参数。
 
 ###  生成文件的存放路径配置
 

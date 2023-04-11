@@ -32,6 +32,8 @@ protected:
 	CButton _btnSavePath;
 	CButton _btnFBSPath;
 	CEdit _editRecv;
+	CEdit _editOtherParams;
+	CComboBox _comboCompileLang;
 
 	virtual BOOL OnInitDialog();
 	afx_msg HCURSOR OnQueryDragIcon();
@@ -44,6 +46,7 @@ protected:
 	bool RunFlatc(const CString& flatcPath, CString param);
 	void AppendMsg(const WCHAR* msg);
 	LRESULT OnFunction(WPARAM wParam, LPARAM lParam);
+	bool LoadFlatcVersion(const CString& flatcPath);
 
 	afx_msg void OnBtnFlatcPath();
 	afx_msg void OnBtnSavePath();
@@ -51,4 +54,5 @@ protected:
 	afx_msg void OnCbnSelchangeComboSelectType();
 	afx_msg void OnBtnFBSPath();
 	afx_msg void OnBtnGenerate();
+	afx_msg void OnCbnSelchangeComboCompileLang();
 };

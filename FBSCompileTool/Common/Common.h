@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 using namespace std;
 
 // 路径操作
@@ -12,3 +13,6 @@ CString PathGetDir(const CString& path);	// 去除文件名，得到目录
 // 数字转换
 CString Double2CStr(const double& num);
 double CStr2Double(const CString& str);
+
+// 字符串操作
+void StrSplit(CString str, const CString& delim, vector<CString>& vec);

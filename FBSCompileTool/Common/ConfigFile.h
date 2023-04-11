@@ -12,6 +12,7 @@
 #define CFG_SelectType	L"SelectType"
 #define CFG_FBSFilesPath	L"FBSFilesPath"
 #define CFG_FlatcLang	L"FlatcLang"
+#define CFG_OtherParams L"OtherParams"
 
 class CConfigFile
 {

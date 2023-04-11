@@ -31,6 +31,8 @@ void CFBSCompileToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_SAVE_PATH, _btnSavePath);
 	DDX_Control(pDX, IDC_BTN_FBS_PATH, _btnFBSPath);
 	DDX_Control(pDX, IDC_EDIT_RECV, _editRecv);
+	DDX_Control(pDX, IDC_EDIT_OTHER_PARAMS, _editOtherParams);
+	DDX_Control(pDX, IDC_COMBO_COMPILE_LANG, _comboCompileLang);
 }
 
 BEGIN_MESSAGE_MAP(CFBSCompileToolDlg, CDialogEx)
@@ -42,6 +44,7 @@ BEGIN_MESSAGE_MAP(CFBSCompileToolDlg, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_COMBO_SELECT_TYPE, &CFBSCompileToolDlg::OnCbnSelchangeComboSelectType)
 	ON_BN_CLICKED(IDC_BTN_FBS_PATH, &CFBSCompileToolDlg::OnBtnFBSPath)
 	ON_BN_CLICKED(IDC_BTN_GENERATE, &CFBSCompileToolDlg::OnBtnGenerate)
+	ON_CBN_SELCHANGE(IDC_COMBO_COMPILE_LANG, &CFBSCompileToolDlg::OnCbnSelchangeComboCompileLang)
 END_MESSAGE_MAP()
 
 
@@ -76,7 +79,8 @@ void CFBSCompileToolDlg::LoadConfig()
 		{
 			_editFlatcPath.SetWindowText(flatcPath);
 		}
-		else
+
+		if (!LoadFlatcVersion(flatcPath))
 		{
 			// 删除配置
 			_config->SetString(CFGKEY_COMMON, CFG_FlatcPath, L"");
@@ -90,6 +94,30 @@ void CFBSCompileToolDlg::LoadConfig()
 		// 提示路径
 		AppendMsg(L"flatc.exe路径 例如：vcpkg\\installed\\x64-windows\\tools\\flatbuffers\\flatc.exe");
 	}
+
+	// 读取编译语言
+	int compileLang = _config->GetInt(CFGKEY_COMMON, CFG_FlatcLang);
+	_comboCompileLang.AddString(L"cpp");
+	_comboCompileLang.AddString(L"csharp");
+	_comboCompileLang.AddString(L"dart");
+	_comboCompileLang.AddString(L"go");
+	_comboCompileLang.AddString(L"java");
+	_comboCompileLang.AddString(L"jsonschema");
+	_comboCompileLang.AddString(L"kotlin");
+	_comboCompileLang.AddString(L"lobster");
+	_comboCompileLang.AddString(L"lua");
+	_comboCompileLang.AddString(L"php");
+	_comboCompileLang.AddString(L"python");
+	_comboCompileLang.AddString(L"rust");
+	_comboCompileLang.AddString(L"swift");
+	_comboCompileLang.AddString(L"ts");
+	_comboCompileLang.SetCurSel(compileLang);
+	OnCbnSelchangeComboCompileLang();
+
+	// 读取其他参数
+	CString otherParams;
+	CString otherParamsConfig = _config->GetString(CFGKEY_COMMON, CFG_OtherParams);
+	_editOtherParams.SetWindowText(otherParamsConfig);
 
 	// 读取保存路径配置
 	_btnSavePath.EnableWindow(FALSE);
@@ -214,8 +242,12 @@ bool CFBSCompileToolDlg::RunFlatc(const CString& flatcPath, CString param)
 			BOOL bSuccess = ReadFile(hRead, chBuf, 1024, &dwRead, NULL); // 这里是读管道，即便已经没有数据，仍然会等待接收数据，所以才需要PeekNamePipe
 			if (bSuccess && dwRead != 0)
 			{
-				// 读取到错误消息
-				ret = false;
+				// 检测是否有错误消息
+				CString strRet(chBuf);
+				if (strRet.Find(L"error") != -1)
+				{
+					ret = false;
+				}
 				AppendMsg(CString(chBuf));
 			}
 		}
@@ -245,6 +277,9 @@ void CFBSCompileToolDlg::OnBtnFlatcPath()
 	{
 		CString flatcPath = openFileDlg.GetPathName();
 		_editFlatcPath.SetWindowText(flatcPath);
+
+		// 获取flatc版本
+		LoadFlatcVersion(flatcPath);
 
 		// 保存配置
 		_config->SetString(CFGKEY_COMMON, CFG_FlatcPath, flatcPath);
@@ -350,6 +385,28 @@ void CFBSCompileToolDlg::OnBtnGenerate()
 	}
 	_config->SetString(CFGKEY_COMMON, CFG_FlatcPath, flatcPath);
 
+	// 编译语言
+	CString strCompileLang;
+	_comboCompileLang.GetWindowText(strCompileLang);
+	CString compileLang = L"--" + strCompileLang;
+	_config->SetInt(CFGKEY_COMMON, CFG_FlatcLang, _comboCompileLang.GetCurSel());
+
+	// 读取其他参数
+	CString otherParams;
+	CString otherParamsConfig;
+	_editOtherParams.GetWindowText(otherParamsConfig);
+	if (!otherParamsConfig.IsEmpty())
+	{
+		vector<CString> vecParams;
+		StrSplit(otherParamsConfig, L",", vecParams);
+		for (auto& param : vecParams)
+		{
+			otherParams += param;
+			otherParams += " "; // 空格间隔
+		}
+	}
+	_config->SetString(CFGKEY_COMMON, CFG_OtherParams, otherParamsConfig);
+
 	// 缓存所有fbs文件路径
 	CString fbsPath;
 	vector<CString> fbsFiles;
@@ -432,7 +489,7 @@ void CFBSCompileToolDlg::OnBtnGenerate()
 	for each (const auto & filePath in fbsFiles)
 	{
 		// 生成FlatBuffers类文件
-		param.Format(L"-o \"%s\" -c \"%s\"", savePath, filePath);
+		param.Format(L"-o \"%s\" %s %s \"%s\"", savePath, otherParams, compileLang, filePath);
 
 		if (!RunFlatc(flatcPath, param))
 		{
@@ -488,3 +545,80 @@ LRESULT CFBSCompileToolDlg::OnFunction(WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
+bool CFBSCompileToolDlg::LoadFlatcVersion(const CString& flatcPath)
+{
+	PROCESS_INFORMATION ProceInfo;
+	SECURITY_ATTRIBUTES sa;
+	ZeroMemory(&sa, sizeof(sa));
+	sa.nLength = sizeof(sa);
+	sa.bInheritHandle = TRUE;
+	HANDLE hRead = NULL;
+	HANDLE hWrite = NULL;
+	if (!CreatePipe(&hRead, &hWrite, &sa, 0))
+	{
+		return false;
+	}
+
+	STARTUPINFO StartInfo;
+	ZeroMemory(&StartInfo, sizeof(StartInfo));
+	StartInfo.cb = sizeof(StartInfo);
+	StartInfo.wShowWindow = SW_HIDE;
+	//使用指定的句柄作为标准输入输出的文件句柄,使用指定的显示方式
+	StartInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+	StartInfo.hStdError = hWrite;
+	StartInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+	StartInfo.hStdOutput = hWrite;
+
+	bool ret = true;
+	CString param;
+	param.Format(L"%s --version", flatcPath);
+	if (CreateProcess(nullptr, param.GetBuffer(), NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &StartInfo, &ProceInfo))
+	{
+		WaitForSingleObject(ProceInfo.hProcess, /*INFINITE*/3000); // 等待3秒
+
+		CHAR chBuf[1024] = { 0 };
+		DWORD dwRead = 0;
+		DWORD dwAvail = 0;
+		if (PeekNamedPipe(hRead, NULL, NULL, &dwRead, &dwAvail, NULL) && dwAvail > 0)//PeekNamePipe用来预览一个管道中的数据，用来判断管道中是否为空
+		{
+			BOOL bSuccess = ReadFile(hRead, chBuf, 1024, &dwRead, NULL); // 这里是读管道，即便已经没有数据，仍然会等待接收数据，所以才需要PeekNamePipe
+			if (bSuccess && dwRead != 0)
+			{
+				// 检测是否有错误消息
+				CString strRet(chBuf);
+				if (strRet.Find(L"error") != -1)
+				{
+					ret = false;
+					strRet.Format(L"读取flatc版本号错误：%s", CString(chBuf));
+					AppendMsg(strRet);
+				}
+				else
+				{
+					AppendMsg(CString(chBuf));
+				}
+			}
+		}
+
+		CloseHandle(ProceInfo.hThread);
+		CloseHandle(ProceInfo.hProcess);
+	}
+	else
+	{
+		ret = false;
+	}
+
+	CloseHandle(hRead);
+	CloseHandle(hWrite);
+
+	return ret;
+}
+
+void CFBSCompileToolDlg::OnCbnSelchangeComboCompileLang()
+{
+	CString strCompileLang;
+	_comboCompileLang.GetWindowText(strCompileLang);
+	if (strCompileLang == L"lua")
+	{
+		AppendMsg(L"注意：生成的lua文件存放于本软件所在文件夹下！");
+	}
+}
