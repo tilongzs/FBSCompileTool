@@ -33,6 +33,7 @@ void CFBSCompileToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_RECV, _editRecv);
 	DDX_Control(pDX, IDC_EDIT_OTHER_PARAMS, _editOtherParams);
 	DDX_Control(pDX, IDC_COMBO_COMPILE_LANG, _comboCompileLang);
+	DDX_Control(pDX, IDC_BTN_GENERATE, _btnGenerate);
 }
 
 BEGIN_MESSAGE_MAP(CFBSCompileToolDlg, CDialogEx)
@@ -98,19 +99,19 @@ void CFBSCompileToolDlg::LoadConfig()
 	// 读取编译语言
 	int compileLang = _config->GetInt(CFGKEY_COMMON, CFG_FlatcLang);
 	_comboCompileLang.AddString(L"cpp");
-	_comboCompileLang.AddString(L"csharp");
+//	_comboCompileLang.AddString(L"csharp");
 	_comboCompileLang.AddString(L"dart");
-	_comboCompileLang.AddString(L"go");
-	_comboCompileLang.AddString(L"java");
-	_comboCompileLang.AddString(L"jsonschema");
-	_comboCompileLang.AddString(L"kotlin");
-	_comboCompileLang.AddString(L"lobster");
-	_comboCompileLang.AddString(L"lua");
-	_comboCompileLang.AddString(L"php");
-	_comboCompileLang.AddString(L"python");
-	_comboCompileLang.AddString(L"rust");
-	_comboCompileLang.AddString(L"swift");
-	_comboCompileLang.AddString(L"ts");
+// 	_comboCompileLang.AddString(L"go");
+// 	_comboCompileLang.AddString(L"java");
+// 	_comboCompileLang.AddString(L"jsonschema");
+// 	_comboCompileLang.AddString(L"kotlin");
+// 	_comboCompileLang.AddString(L"lobster");
+// 	_comboCompileLang.AddString(L"lua");
+// 	_comboCompileLang.AddString(L"php");
+// 	_comboCompileLang.AddString(L"python");
+// 	_comboCompileLang.AddString(L"rust");
+// 	_comboCompileLang.AddString(L"swift");
+// 	_comboCompileLang.AddString(L"ts");
 	_comboCompileLang.SetCurSel(compileLang);
 	OnCbnSelchangeComboCompileLang();
 
@@ -409,10 +410,10 @@ void CFBSCompileToolDlg::OnBtnGenerate()
 
 	// 缓存所有fbs文件路径
 	CString fbsPath;
+	_editFBSPath.GetWindowText(fbsPath);
 	vector<CString> fbsFiles;
 	if (_comboboxSelectType.GetCurSel() == 0) // 单个fbs文件
 	{
-		_editFBSPath.GetWindowText(fbsPath);
 
 		// 检查文件是否存在
 		if (fbsPath.IsEmpty())
@@ -485,6 +486,8 @@ void CFBSCompileToolDlg::OnBtnGenerate()
 	_config->SetString(CFGKEY_COMMON, CFG_SavePath, savePath);
 	_config->SetString(CFGKEY_COMMON, CFG_FBSFilesPath, fbsPath);
 
+	// 开始转换
+	_btnGenerate.SetWindowText(L"正在转换...");
 	CString param;
 	for each (const auto & filePath in fbsFiles)
 	{
@@ -493,10 +496,13 @@ void CFBSCompileToolDlg::OnBtnGenerate()
 
 		if (!RunFlatc(flatcPath, param))
 		{
+			_btnGenerate.SetWindowText(L"开始转换");
+			AppendMsg(L"转换失败");
 			return;
 		}
 	}
 
+	_btnGenerate.SetWindowText(L"开始转换");
 	AppendMsg(L"转换完成");
 	MessageBox(L"转换完成");
 }

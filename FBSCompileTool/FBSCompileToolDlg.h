@@ -34,6 +34,7 @@ protected:
 	CEdit _editRecv;
 	CEdit _editOtherParams;
 	CComboBox _comboCompileLang;
+	CButton _btnGenerate;
 
 	virtual BOOL OnInitDialog();
 	afx_msg HCURSOR OnQueryDragIcon();
